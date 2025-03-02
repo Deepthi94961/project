@@ -1,0 +1,80 @@
+.sidebar {
+    background: #333;
+    color: white;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    transition: width 0.3s ease;
+  }
+  
+  .sidebar.open {
+    width: 250px;
+  }
+  
+  .sidebar.closed {
+    width: 80px;
+  }
+  
+  .top-section {
+    display: flex;
+    align-items: center;
+    padding: 20px;
+    gap: 10px;
+    cursor: pointer;
+  }
+  
+  .home-icon {
+    background: #555;
+    color: white;
+    padding: 10px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  h2 {
+    font-size: 1.5rem;
+    display: none;
+  }
+  
+  .sidebar.open h2 {
+    display: block;
+  }
+  
+  .menu {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .menu-item {
+    display: flex;
+    align-items: center;
+    padding: 15px;
+    cursor: pointer;
+    gap: 15px;
+    transition: background 0.2s;
+  }
+  
+  .menu-item:hover {
+    background: #555;
+  }
+  
+  .menu-item.active {
+    background: #007bff;
+  }
+  
+  .menu-item .icon {
+    font-size: 1.2rem;
+  }
+  
+  .menu-item .text {
+    font-size: 1rem;
+    display: none;
+  }
+  
+  .sidebar.open .menu-item .text {
+    display: block;
+  }
+  
