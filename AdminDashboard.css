@@ -34,3 +34,112 @@ th {
 tr:hover {
   background: #f1f1f1;
 }
+.header-title {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;  /* Centers the text */
+  color: #333;
+  margin-bottom: 20px;
+  width: 100%;  /* Ensures it spans the full width */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.analysis-chart {
+  position: relative;
+}
+/* System Settings Container */
+.system-settings {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Header */
+.settings-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.settings-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-left: 12px;
+}
+
+.settings-icon {
+  width: 24px;
+  height: 24px;
+  color: #3b82f6;
+}
+
+/* Settings List */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.setting-label {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: #374151;
+}
+
+.setting-input {
+  padding: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 1rem;
+  color: #1f2937;
+  background-color: #f9fafb;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.setting-input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Save Button */
+.save-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 12px;
+  margin-top: 24px;
+  background-color: #3b82f6;
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 500;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.save-button:hover {
+  background-color: #2563eb;
+}
+
+.save-icon {
+  width: 18px;
+  height: 18px;
+  margin-right: 8px;
+}
+
+
+
