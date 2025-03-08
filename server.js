@@ -43,6 +43,13 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
         };
 
         const result = await db.collection('Signin').insertOne(newUser);
+
+        // Add a notification when a new user is created
+        await db.collection('notifications').insertOne({
+          message: `${newUser.fullName} has signed up.`,
+          createdAt: new Date(),
+        });
+
         res.status(201).json({ message: 'User registered successfully.', userId: result.insertedId });
       } catch (error) {
         console.error('Error during signup:', error);
@@ -117,7 +124,29 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       }
     });
 
-    // Get all property listings with correct collection name
+    // Reject a listing
+    app.delete('/listings/:id/reject', async (req, res) => {
+      try {
+        const listingId = req.params.id;
+
+        if (!ObjectId.isValid(listingId)) {
+          return res.status(400).json({ message: 'Invalid listing ID.' });
+        }
+
+        const result = await db.collection('listings').deleteOne({ _id: new ObjectId(listingId) });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Listing not found or already deleted.' });
+        }
+
+        res.status(200).json({ message: 'Listing successfully rejected and removed.' });
+      } catch (error) {
+        console.error('Error rejecting listing:', error);
+        res.status(500).json({ message: 'Internal server error while rejecting listing.', error });
+      }
+    });
+
+    // Get all property listings
     app.get('/listings', async (req, res) => {
       try {
         const listings = await db.collection('listings').find().toArray();
@@ -128,7 +157,32 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       }
     });
 
-    // Start the server only after MongoDB is connected
+    // Get all notifications
+    app.get('/notifications', async (req, res) => {
+      try {
+        const notifications = await db.collection('notifications').find().toArray();
+        res.status(200).json({ notifications });
+      } catch (error) {
+        console.error('Error fetching notifications:', error);
+        res.status(500).json({ message: 'Error fetching notifications.', error });
+      }
+    });
+
+    // Delete all notifications
+    app.delete('/notifications', async (req, res) => {
+      try {
+        const result = await db.collection('notifications').deleteMany({});
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'No notifications found to delete.' });
+        }
+        res.status(200).json({ message: 'All notifications deleted successfully.' });
+      } catch (error) {
+        console.error('Error deleting notifications:', error);
+        res.status(500).json({ message: 'Error deleting notifications.', error });
+      }
+    });
+
+    // Start the server
     app.listen(PORT, () => {
       console.log(`🚀 Server running on http://localhost:${PORT}`);
     });
