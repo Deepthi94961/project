@@ -9,6 +9,12 @@ const PORT = 5000;
 const MONGO_URI = 'mongodb://localhost:27017';
 const DB_NAME = 'admin';
 
+// Admin credentials
+const ADMIN_CREDENTIALS = {
+  email: 'chdeepthi5678@gmail.com',
+  password: '1234', // In production, store this as a hashed value
+};
+
 app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
 app.use(bodyParser.json());
 
@@ -17,7 +23,58 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
     const db = client.db(DB_NAME);
     console.log('✅ MongoDB connected');
 
-    // Signup route with password hashing
+    // Middleware to enforce maintenance mode
+    app.use(async (req, res, next) => {
+      if (req.path === '/signin' || req.path === '/signup') {
+        const maintenanceModeSetting = await db.collection('settings').findOne({ name: 'maintenanceMode' });
+
+        // Allow admin to bypass maintenance mode
+        if (maintenanceModeSetting && maintenanceModeSetting.value === 'true') {
+          const { email, password } = req.body;
+
+          // Check if the user is the admin
+          if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+            return next(); // Allow admin to proceed
+          }
+
+          return res.status(503).json({ message: 'Server is in maintenance mode. Please try again later.' });
+        }
+      }
+
+      next();
+    });
+
+    // Fetch system settings
+    app.get('/api/settings', async (req, res) => {
+      try {
+        const settings = await db.collection('settings').find().toArray();
+        res.status(200).json(settings);
+      } catch (error) {
+        res.status(500).json({ message: 'Failed to fetch settings', error });
+      }
+    });
+
+    // Save system settings
+    app.put('/api/settings', async (req, res) => {
+      try {
+        const updatedSettings = req.body;
+        const bulkOps = updatedSettings.map((setting) => ({
+          updateOne: {
+            filter: { name: setting.name },
+            update: { $set: { value: setting.value } },
+            upsert: true,
+          },
+        }));
+
+        await db.collection('settings').bulkWrite(bulkOps);
+        res.status(200).json({ message: 'Settings saved successfully' });
+      } catch (error) {
+        console.error('Error saving settings:', error);
+        res.status(500).json({ message: 'Failed to save settings', error });
+      }
+    });
+
+    // Signup route with password hashing and user registration enforcement
     app.post('/signup', async (req, res) => {
       const { fullName, email, password, confirmPassword } = req.body;
 
@@ -26,6 +83,12 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       }
 
       try {
+        const userRegistrationSetting = await db.collection('settings').findOne({ name: 'userRegistration' });
+
+        if (userRegistrationSetting && userRegistrationSetting.value === 'false') {
+          return res.status(403).json({ message: 'User registration is currently disabled.' });
+        }
+
         const existingUser = await db.collection('Signin').findOne({ email });
         if (existingUser) {
           return res.status(400).json({ message: 'User already exists.' });
@@ -62,6 +125,11 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       const { email, password } = req.body;
 
       try {
+        // Check if the user is the admin
+        if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
+          return res.status(200).json({ message: 'Admin sign-in successful' });
+        }
+
         const suspendedUser = await db.collection('suspendedUsers').findOne({ email });
         if (suspendedUser) {
           return res.status(403).json({ message: 'Your account has been suspended. Contact support.' });
@@ -121,6 +189,22 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       } catch (error) {
         console.error('Error updating user status:', error);
         res.status(500).json({ message: 'Error updating user status.', error });
+      }
+    });
+
+    // Create listing with auto-approval enforcement
+    app.post('/listings', async (req, res) => {
+      try {
+        const listingAutoApprovalSetting = await db.collection('settings').findOne({ name: 'listingAutoApproval' });
+
+        const newListing = req.body;
+        newListing.status = listingAutoApprovalSetting && listingAutoApprovalSetting.value === 'true' ? 'approved' : 'pending';
+
+        await db.collection('listings').insertOne(newListing);
+        res.status(201).json({ message: 'Listing created successfully', listing: newListing });
+      } catch (error) {
+        console.error('Error creating listing:', error);
+        res.status(500).json({ message: 'Error creating listing.', error });
       }
     });
 
