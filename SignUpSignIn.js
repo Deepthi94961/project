@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom'; // Use useNavigate for navigation
+import { useNavigate } from 'react-router-dom';
 import './App.css';
 
 const SignUpSignIn = () => {
@@ -21,15 +21,14 @@ const SignUpSignIn = () => {
         body: JSON.stringify(data),
       });
 
-      const result = await response.json();
       if (!response.ok) {
-        throw new Error(result.message || 'Failed to fetch');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to fetch');
       }
 
+      const result = await response.json();
       alert(result.message);
-      if (formType === 'signin') {
-        navigate('/admin'); // Navigate to AdminDashboard after sign-in
-      }
+      navigate('/admin');
     } catch (error) {
       console.error('Error:', error.message);
       alert(`Error: ${error.message}`);
@@ -58,9 +57,9 @@ const SignUpSignIn = () => {
             <input name="email" type="email" placeholder="EMAIL" className="input-field" required />
             <input name="password" type="password" placeholder="PASSWORD" className="input-field" required />
             <button type="submit" className="form-button">SIGN IN</button>
-            <div className="forgot-password" onClick={() => alert('Redirecting to Forgot Password page...')}>
-              Forgot Password?
-            </div>
+            <div className="forgot-password" onClick={() => navigate('/forgot-password')}>
+  Forgot Password?
+</div>
             <div className="or-separator">OR</div>
             <button type="button" className="google-button" onClick={() => alert('Redirecting to Google login...')}>
               Login with Google

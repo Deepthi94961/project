@@ -3,11 +3,45 @@ const bodyParser = require('body-parser');
 const cors = require('cors');
 const { MongoClient, ObjectId } = require('mongodb');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
+const crypto = require('crypto');
 
 const app = express();
 const PORT = 5000;
 const MONGO_URI = 'mongodb://localhost:27017';
 const DB_NAME = 'admin';
+
+// Nodemailer configuration
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'chdeepthi5678@gmail.com', // Replace with your email
+    pass: 'islw rwed htqa dtwe', // Replace with your email password or App Password
+  },
+});
+
+// Generate a reset token
+const generateResetToken = () => {
+  return crypto.randomBytes(20).toString('hex');
+};
+
+// Send reset email
+const sendResetEmail = async (email, resetToken) => {
+  const resetUrl = `http://localhost:3000/reset-password/${resetToken}`;
+
+  const mailOptions = {
+    from: 'your-email@gmail.com',
+    to: email,
+    subject: 'Password Reset',
+    text: `Click the link to reset your password: ${resetUrl}`,
+  };
+
+  await transporter.sendMail(mailOptions);
+};
+
+// Middleware
+app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
+app.use(bodyParser.json());
 
 // Admin credentials
 const ADMIN_CREDENTIALS = {
@@ -15,9 +49,7 @@ const ADMIN_CREDENTIALS = {
   password: '1234', // In production, store this as a hashed value
 };
 
-app.use(cors({ origin: 'http://localhost:3000', methods: ['GET', 'POST', 'PUT', 'DELETE'] }));
-app.use(bodyParser.json());
-
+// Connect to MongoDB
 MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
   .then((client) => {
     const db = client.db(DB_NAME);
@@ -42,6 +74,76 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       }
 
       next();
+    });
+
+    app.post('/forgot-password', async (req, res) => {
+      const { email } = req.body;
+    
+      try {
+        console.log('Received email:', email); // Log the email
+    
+        // Find the user in the database
+        const user = await db.collection('Signin').findOne({ email });
+        if (!user) {
+          console.log('User not found for email:', email);
+          return res.status(404).json({ message: 'User not found' });
+        }
+    
+        console.log('User found:', user); // Log the user
+    
+        // Generate a reset token and set expiry
+        const resetToken = generateResetToken();
+        const resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    
+        // Update the user with the reset token and expiry
+        await db.collection('Signin').updateOne(
+          { _id: user._id },
+          { $set: { resetPasswordToken: resetToken, resetPasswordExpires: resetTokenExpiry } }
+        );
+    
+        console.log('Reset token generated and user updated:', resetToken);
+    
+        // Send the reset email
+        await sendResetEmail(email, resetToken);
+        console.log('Reset email sent successfully');
+    
+        res.status(200).json({ message: 'Password reset email sent' });
+      } catch (error) {
+        console.error('Error in forgot password:', error.message, error.stack); // Detailed error logging
+        res.status(500).json({ message: 'Error processing forgot password request' });
+      }
+    }); app.post('/reset-password/:token', async (req, res) => {
+      const { token } = req.params;
+      const { newPassword } = req.body;
+    
+      try {
+        // Find the user with the matching reset token and check if it's still valid
+        const user = await db.collection('Signin').findOne({
+          resetPasswordToken: token,
+          resetPasswordExpires: { $gt: Date.now() }, // Check if the token is not expired
+        });
+    
+        if (!user) {
+          return res.status(400).json({ message: 'Invalid or expired token.' });
+        }
+    
+        // Hash the new password
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+    
+        // Update the user's password and clear the reset token
+        await db.collection('Signin').updateOne(
+          { _id: user._id },
+          {
+            $set: { password: hashedPassword },
+            $unset: { resetPasswordToken: '', resetPasswordExpires: '' },
+          }
+        );
+    
+        res.status(200).json({ message: 'Password reset successfully.' });
+      } catch (error) {
+        console.error('Error resetting password:', error);
+        res.status(500).json({ message: 'Error resetting password.', error });
+      }
     });
 
     // Fetch system settings
