@@ -252,6 +252,28 @@ MongoClient.connect(MONGO_URI, { useUnifiedTopology: true })
       }
     });
 
+    // Delete a specific notification by ID
+    app.delete('/notifications/:id', async (req, res) => {
+      try {
+        const notificationId = req.params.id;
+
+        if (!ObjectId.isValid(notificationId)) {
+          return res.status(400).json({ message: 'Invalid notification ID.' });
+        }
+
+        const result = await db.collection('notifications').deleteOne({ _id: new ObjectId(notificationId) });
+
+        if (result.deletedCount === 0) {
+          return res.status(404).json({ message: 'Notification not found or already deleted.' });
+        }
+
+        res.status(200).json({ message: 'Notification deleted successfully.' });
+      } catch (error) {
+        console.error('Error deleting notification:', error);
+        res.status(500).json({ message: 'Error deleting notification.', error });
+      }
+    });
+
     // Delete all notifications
     app.delete('/notifications', async (req, res) => {
       try {

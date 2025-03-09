@@ -1,80 +1,105 @@
+/* Sidebar container */
 .sidebar {
-    background: #333;
-    color: white;
-    height: 100vh;
-    display: flex;
-    flex-direction: column;
-    transition: width 0.3s ease;
-  }
+  background: #333;
+  color: white;
+  height: 100vh;
+  width: 80px; /* Default width when closed */
+  display: flex;
+  flex-direction: column;
+  padding-top: 20px;
+  transition: width 0.3s ease;
+}
+
+.sidebar.open {
+  width: 250px; /* Expanded width when open */
+}
+
+/* Dashboard icon */
+.dashboard-icon {
+ 
+  color: white;
+  padding: 10px;
+ 
+ 
   
-  .sidebar.open {
-    width: 250px;
-  }
+  justify-content: center;
+  cursor: pointer;
+  margin-bottom: 20px; /* Space between dashboard icon and home icon */
+  margin-left: 10px; /* Align to the left */
+}
+
+/* Home icon */
+.home-icon {
   
-  .sidebar.closed {
-    width: 80px;
-  }
-  
-  .top-section {
-    display: flex;
-    align-items: center;
-    padding: 20px;
-    gap: 10px;
-    cursor: pointer;
-  }
-  
-  .home-icon {
-    background: #555;
-    color: white;
-    padding: 10px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  
-  h2 {
-    font-size: 1.5rem;
-    display: none;
-  }
-  
-  .sidebar.open h2 {
-    display: block;
-  }
-  
-  .menu {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-  }
-  
-  .menu-item {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    cursor: pointer;
-    gap: 15px;
-    transition: background 0.2s;
-  }
-  
-  .menu-item:hover {
-    background: #555;
-  }
-  
-  .menu-item.active {
-    background: #007bff;
-  }
-  
-  .menu-item .icon {
-    font-size: 1.2rem;
-  }
-  
-  .menu-item .text {
-    font-size: 1rem;
-    display: none;
-  }
-  
-  .sidebar.open .menu-item .text {
-    display: block;
-  }
-  
+  color: white;
+  padding: 10px;
+
+ 
+  cursor: pointer;
+  margin-left: 10px; /* Align to the left */
+}
+
+/* Heading */
+h2 {
+  font-size: 1.5rem;
+  display: none;
+  margin-left: 10px; /* Align to the left */
+}
+
+.sidebar.open h2 {
+  display: block;
+}
+
+/* Scrollable Menu */
+.menu {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  max-height: 60vh; /* Limits height to enable scrolling */
+  overflow-y: auto;
+  scrollbar-width: thin; /* Firefox */
+  scrollbar-color: #888 #444; /* Scrollbar styling */
+}
+
+/* Webkit (Chrome, Edge, Safari) */
+.menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.menu::-webkit-scrollbar-thumb {
+  background-color: #888;
+  border-radius: 10px;
+}
+
+/* Menu item */
+.menu-item {
+  display: flex;
+
+  padding: 15px;
+  cursor: pointer;
+  gap: 15px;
+  transition: background 0.2s;
+  margin-left: 10px; /* Align to the left */
+}
+
+.menu-item:hover {
+  background: #555;
+}
+
+.menu-item.active {
+  background: #007bff;
+}
+
+.menu-item .icon {
+  font-size: 1.2rem;
+}
+
+.menu-item .text {
+  font-size: 1rem;
+  display: none;
+}
+
+.sidebar.open .menu-item .text {
+  display: block;
+}

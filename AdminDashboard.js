@@ -7,6 +7,7 @@ import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from './Sidebar';
 import './AdminDashboard.css';
+import { FaUsers, FaUserCheck, FaUserSlash, FaList, FaBell } from 'react-icons/fa'; // Icons for statistics
 
 class AdminDashboard extends Component {
   constructor(props) {
@@ -47,6 +48,7 @@ class AdminDashboard extends Component {
 
   componentDidMount() {
     this.fetchUsers();
+    this.fetchListings();
     this.fetchNotifications();
   }
 
@@ -120,9 +122,46 @@ class AdminDashboard extends Component {
         method: 'DELETE',
       });
       if (!response.ok) throw new Error('Failed to clear notifications');
-      this.setState({ notifications: [] }); // Clear notifications in the frontend state
+      this.setState({ notifications: [] });
     } catch (error) {
       console.error('Error clearing notifications:', error);
+    }
+  };
+
+  handleClearNotification = async (notificationId) => {
+    try {
+      const response = await fetch(`http://localhost:5000/notifications/${notificationId}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to delete notification');
+      }
+
+      // Remove the deleted notification from the state
+      this.setState((prevState) => ({
+        notifications: prevState.notifications.filter((notif) => notif._id !== notificationId),
+      }));
+
+      toast.success('Notification cleared successfully!', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
+    } catch (error) {
+      console.error('Error clearing notification:', error);
+
+      toast.error('Failed to clear notification. Please try again.', {
+        position: 'top-right',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true,
+      });
     }
   };
 
@@ -151,7 +190,7 @@ class AdminDashboard extends Component {
 
     if (action === 'rejected') {
       url = `http://localhost:5000/listings/${listingId}/reject`;
-      method = 'DELETE'; // Use DELETE method for rejection
+      method = 'DELETE';
     }
 
     try {
@@ -189,10 +228,9 @@ class AdminDashboard extends Component {
 
       if (!response.ok) throw new Error('Failed to save settings');
 
-      // Display success toast
       toast.success('Settings saved successfully!', {
         position: 'top-right',
-        autoClose: 3000, // Close after 3 seconds
+        autoClose: 3000,
         hideProgressBar: false,
         closeOnClick: true,
         pauseOnHover: true,
@@ -201,7 +239,6 @@ class AdminDashboard extends Component {
     } catch (error) {
       console.error('Error saving settings:', error);
 
-      // Display error toast
       toast.error('Failed to save settings. Please try again.', {
         position: 'top-right',
         autoClose: 3000,
@@ -252,261 +289,285 @@ class AdminDashboard extends Component {
     return months;
   };
 
-  handleSignin = async (email, password) => {
-    try {
-      const response = await fetch('http://localhost:5000/signin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.status === 503) {
-        const data = await response.json();
-        toast.error(data.message); // Display maintenance mode message
-        return;
-      }
-
-      if (!response.ok) throw new Error('Failed to sign in');
-
-      const result = await response.json();
-      toast.success(result.message); // Display success message
-
-      // Redirect admin to the admin dashboard
-      if (email === 'chdeepthi5678@gmail.com') {
-        window.location.href = '/admin-dashboard'; // Redirect to admin dashboard
-      }
-    } catch (error) {
-      console.error('Error during sign-in:', error);
-      toast.error('Error signing in. Please try again.');
-    }
-  };
-
-  handleSignup = async (fullName, email, password, confirmPassword) => {
-    if (!fullName || !email || !password || password !== confirmPassword) {
-      toast.error('Invalid input or passwords do not match.');
-      return;
-    }
-
-    try {
-      const response = await fetch('http://localhost:5000/signup', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fullName, email, password, confirmPassword }),
-      });
-
-      if (response.status === 503) {
-        const data = await response.json();
-        toast.error(data.message); // Display maintenance mode message
-        return;
-      }
-
-      if (!response.ok) throw new Error('Failed to sign up');
-
-      const result = await response.json();
-      toast.success(result.message); // Display success message
-    } catch (error) {
-      console.error('Error during signup:', error);
-      toast.error('Error registering user. Please try again.');
-    }
-  };
-
   render() {
-    const { activeTab, users, listings, notifications, settings } = this.state;
+    const { activeTab, users, listings, notifications, settings } = this.state; // Destructure settings
     const activeUsers = users.filter((user) => user.status === 'active').length;
     const suspendedUsers = users.length - activeUsers;
-
-    const data = [
-      { name: 'Active Users', value: activeUsers },
-      { name: 'Suspended Users', value: suspendedUsers },
-    ];
-
-    const COLORS = ['#0088FE', '#FFBB28'];
 
     return (
       <div className="dashboard">
         <Sidebar activeTab={activeTab} setActiveTab={(tab) => this.setState({ activeTab: tab })} />
         <div className="main-content">
-          {activeTab === '' && <h2>Welcome to Admin Dashboard</h2>}
+          <div className="content-scrollable">
+            {activeTab === '' && (
+              <div className="home-page">
+                <h1>Welcome to Admin Dashboard</h1>
+                <p>Manage your platform efficiently with real-time insights.</p>
 
-          {activeTab === 'View All Users' && (
-            <div className="user-table">
-              <h2>{activeTab}</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>User ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user._id}>
-                      <td>{user._id}</td>
-                      <td>{user.fullName}</td>
-                      <td>{user.email}</td>
-                      <td>{user.status}</td>
+                {/* Statistics Cards */}
+                <div className="stats-grid">
+                  {/* Total Users Card */}
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaUsers size={30} color="#4CAF50" />
+                    </div>
+                    <div className="stat-info">
+                      <h3>Total Users</h3>
+                      <p>{users.length}</p>
+                    </div>
+                  </div>
+
+                  {/* Active Users Card */}
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaUserCheck size={30} color="#2196F3" />
+                    </div>
+                    <div className="stat-info">
+                      <h3>Active Users</h3>
+                      <p>{activeUsers}</p>
+                    </div>
+                  </div>
+
+                  {/* Suspended Users Card */}
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaUserSlash size={30} color="#FF5722" />
+                    </div>
+                    <div className="stat-info">
+                      <h3>Suspended Users</h3>
+                      <p>{suspendedUsers}</p>
+                    </div>
+                  </div>
+
+                  {/* Total Listings Card */}
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaList size={30} color="#9C27B0" />
+                    </div>
+                    <div className="stat-info">
+                      <h3>Total Listings</h3>
+                      <p>{listings.length}</p>
+                    </div>
+                  </div>
+
+                  {/* Total Notifications Card */}
+                  <div className="stat-card">
+                    <div className="stat-icon">
+                      <FaBell size={30} color="#FFC107" />
+                    </div>
+                    <div className="stat-info">
+                      <h3>Total Notifications</h3>
+                      <p>{notifications.length}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeTab === 'View All Users' && (
+              <div className="user-table">
+                <h2>{activeTab}</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>User ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user._id}>
+                        <td>{user._id}</td>
+                        <td>{user.fullName}</td>
+                        <td>{user.email}</td>
+                        <td>{user.status}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {activeTab === 'Suspend/Activate User Accounts' && (
-            <div className="user-table">
-              <h2>{activeTab}</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>User ID</th>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Action</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((user) => (
-                    <tr key={user._id}>
-                      <td>{user._id}</td>
-                      <td>{user.fullName}</td>
-                      <td>{user.email}</td>
-                      <td>
-                        <button onClick={() => this.toggleUserSuspend(user._id, user.status)}>
-                          {user.status === 'active' ? 'Suspend' : 'Activate'}
-                        </button>
-                      </td>
+            {activeTab === 'Suspend/Activate User Accounts' && (
+              <div className="user-table">
+                <h2>{activeTab}</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>User ID</th>
+                      <th>Name</th>
+                      <th>Email</th>
+                      <th>Action</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-
-          {(activeTab === 'View All Listings' || activeTab === 'Approve/Reject Listings') && (
-            <div className="listings-table">
-              <h2>{activeTab}</h2>
-              <table>
-                <thead>
-                  <tr>
-                    <th>Title</th>
-                    <th>Description</th>
-                    <th>Price</th>
-                    <th>Type</th>
-                    <th>Availability</th>
-                    <th>listing Posted</th>
-                    {activeTab === 'Approve/Reject Listings' && <th>Action</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {listings.map((listing) => (
-                    <tr key={listing._id}>
-                      <td>{listing.title}</td>
-                      <td>{listing.description}</td>
-                      <td>${listing.price.toLocaleString()}</td>
-                      <td>{listing.property_type}</td>
-                      <td>{listing.availability}</td>
-                      <td>{listing.postedMonth} {listing.postedYear}</td>
-                      {activeTab === 'Approve/Reject Listings' && (
+                  </thead>
+                  <tbody>
+                    {users.map((user) => (
+                      <tr key={user._id}>
+                        <td>{user._id}</td>
+                        <td>{user.fullName}</td>
+                        <td>{user.email}</td>
                         <td>
-                          <button onClick={() => this.handleListingAction(listing._id, 'rejected')}>
-                            Reject
+                          <button onClick={() => this.toggleUserSuspend(user._id, user.status)}>
+                            {user.status === 'active' ? 'Suspend' : 'Activate'}
                           </button>
                         </td>
-                      )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {(activeTab === 'View All Listings' || activeTab === 'Approve/Reject Listings') && (
+              <div className="listings-table">
+                <h2>{activeTab}</h2>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Description</th>
+                      <th>Price</th>
+                      <th>Type</th>
+                      <th>Availability</th>
+                      <th>listing Posted</th>
+                      {activeTab === 'Approve/Reject Listings' && <th>Action</th>}
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {listings.map((listing) => (
+                      <tr key={listing._id}>
+                        <td>{listing.title}</td>
+                        <td>{listing.description}</td>
+                        <td>${listing.price.toLocaleString()}</td>
+                        <td>{listing.property_type}</td>
+                        <td>{listing.availability}</td>
+                        <td>{listing.postedMonth} {listing.postedYear}</td>
+                        {activeTab === 'Approve/Reject Listings' && (
+                          <td>
+                            <button onClick={() => this.handleListingAction(listing._id, 'rejected')}>
+                              Reject
+                            </button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
 
-          {activeTab === 'View Platform Analytics' && (
-            <div className="analysis-chart">
-              <p className="header-title">Visualization of Users and Listings</p>
-              <PieChart width={500} height={350}>
-                <Pie data={data} cx={200} cy={150} outerRadius={100} fill="#8884d8" dataKey="value" label>
-                  {data.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" />
-              </PieChart>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart
-                  data={this.processListingsByMonth(listings)}
-                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
-                  <YAxis label={{ value: 'Listings', angle: -90, position: 'insideLeft' }} />
+            {activeTab === 'View Platform Analytics' && (
+              <div className="analysis-chart">
+                <p className="header-title">Visualization of Users and Listings</p>
+                <PieChart width={500} height={350}>
+                  <Pie data={[
+                    { name: 'Active Users', value: activeUsers },
+                    { name: 'Suspended Users', value: suspendedUsers },
+                  ]} cx={200} cy={150} outerRadius={100} fill="#8884d8" dataKey="value" label>
+                    <Cell fill="#0088FE" />
+                    <Cell fill="#FFBB28" />
+                  </Pie>
                   <Tooltip />
-                  <Bar dataKey="listings" fill="#82ca9d" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
+                  <Legend layout="vertical" align="right" verticalAlign="middle" />
+                </PieChart>
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart
+                    data={this.processListingsByMonth(listings)}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
+                    <YAxis label={{ value: 'Listings', angle: -90, position: 'insideLeft' }} />
+                    <Tooltip />
+                    <Bar dataKey="listings" fill="#82ca9d" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            )}
 
-          {activeTab === 'notifications' && (
-            <div className="notifications-section">
-              <h2>Notifications</h2>
-              <table>
+            {activeTab === 'notifications' && (
+              <div className="notifications-section">
+                <h2>Notifications</h2>
                 {notifications.length === 0 ? (
-                  <th>No new notifications</th>
+                  <p>No new notifications</p>
                 ) : (
-                  notifications.map((notif, index) => (
-                    <tr key={notif._id || index}>{notif.message}</tr>
-                  ))
+                  <table className="notifications-table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Message</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {notifications.map((notif, index) => (
+                        <tr key={notif._id || index}>
+                          <td>{index + 1}</td>
+                          <td>{notif.message}</td>
+                          <td>
+                            <button
+                              className="clear-notification-btn"
+                              onClick={() => this.handleClearNotification(notif._id)}
+                            >
+                              Clear
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 )}
-              </table>
-              {notifications.length > 0 && (
-                <button onClick={this.clearNotifications}>Clear All</button>
-              )}
-            </div>
-          )}
-
-          {activeTab === 'System Settings' && (
-            <div className="system-settings">
-              <div className="settings-header">
-                <Settings className="settings-icon" />
-                <h2>System Settings</h2>
+                {notifications.length > 0 && (
+                  <button className="clear-all-btn" onClick={this.clearNotifications}>
+                    Clear All
+                  </button>
+                )}
               </div>
+            )}
 
-              <div className="settings-list">
-                {settings.map((setting) => (
-                  <div key={setting.id} className="setting-item">
-                    <label className="setting-label">{setting.description}</label>
-                    {setting.name === 'maintenanceMode' ||
-                    setting.name === 'userRegistration' ||
-                    setting.name === 'listingAutoApproval' ? (
-                      <select
-                        value={setting.value}
-                        onChange={(e) => this.handleSettingChange(setting.id, e.target.value)}
-                        className="setting-input"
-                      >
-                        <option value="true">Enabled</option>
-                        <option value="false">Disabled</option>
-                      </select>
-                    ) : (
-                      <input
-                        type="number"
-                        value={setting.value}
-                        onChange={(e) => this.handleSettingChange(setting.id, e.target.value)}
-                        className="setting-input"
-                      />
-                    )}
-                  </div>
-                ))}
+            {activeTab === 'System Settings' && (
+              <div className="system-settings">
+                <div className="settings-header">
+                  <Settings className="settings-icon" />
+                  <h2>System Settings</h2>
+                </div>
+
+                <div className="settings-list">
+                  {settings.map((setting) => (
+                    <div key={setting.id} className="setting-item">
+                      <label className="setting-label">{setting.description}</label>
+                      {setting.name === 'maintenanceMode' ||
+                      setting.name === 'userRegistration' ||
+                      setting.name === 'listingAutoApproval' ? (
+                        <select
+                          value={setting.value}
+                          onChange={(e) => this.handleSettingChange(setting.id, e.target.value)}
+                          className="setting-input"
+                        >
+                          <option value="true">Enabled</option>
+                          <option value="false">Disabled</option>
+                        </select>
+                      ) : (
+                        <input
+                          type="number"
+                          value={setting.value}
+                          onChange={(e) => this.handleSettingChange(setting.id, e.target.value)}
+                          className="setting-input"
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <button onClick={this.handleSaveSettings} className="save-button">
+                  <Save className="save-icon" />
+                  Save Settings
+                </button>
               </div>
-
-              <button onClick={this.handleSaveSettings} className="save-button">
-                <Save className="save-icon" />
-                Save Settings
-              </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Add ToastContainer to display notifications */}
