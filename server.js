@@ -15,8 +15,7 @@ const DB_NAME = 'admin';
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: 'chdeepthi5678@gmail.com', // Replace with your email
-    pass: 'islw rwed htqa dtwe', // Replace with your email password or App Password
+    // Replace with your email password or App Password
   },
 });
 
@@ -45,8 +44,7 @@ app.use(bodyParser.json());
 
 // Admin credentials
 const ADMIN_CREDENTIALS = {
-  email: 'chdeepthi5678@gmail.com',
-  password: '1234', // In production, store this as a hashed value
+  // In production, store this as a hashed value
 };
 
 // Connect to MongoDB
