@@ -1,7 +1,5 @@
 import React, { Component } from 'react';
-import { PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
-import { BarChart, CartesianGrid, XAxis, YAxis, Bar } from 'recharts';
-import { ResponsiveContainer } from 'recharts';
+import { PieChart, Pie, Cell, Tooltip, Legend, BarChart, CartesianGrid, XAxis, YAxis, Bar, ResponsiveContainer } from 'recharts';
 import { Save, Settings } from 'lucide-react';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
@@ -289,6 +287,30 @@ class AdminDashboard extends Component {
     return months;
   };
 
+  // Helper function to process listings by rating
+  processListingsByRating = (listings) => {
+    const ratingCounts = {};
+
+    // Initialize rating counts
+    for (let i = 1; i <= 5; i++) {
+      ratingCounts[i] = 0;
+    }
+
+    // Count listings for each rating
+    listings.forEach((listing) => {
+      const rating = Math.floor(listing.rating.average_rating); // Round down to the nearest integer
+      if (rating >= 1 && rating <= 5) {
+        ratingCounts[rating]++;
+      }
+    });
+
+    // Convert to an array of objects for Recharts
+    return Object.keys(ratingCounts).map((rating) => ({
+      rating: `${rating} Star`,
+      listings: ratingCounts[rating],
+    }));
+  };
+
   render() {
     const { activeTab, users, listings, notifications, settings } = this.state; // Destructure settings
     const activeUsers = users.filter((user) => user.status === 'active').length;
@@ -302,8 +324,6 @@ class AdminDashboard extends Component {
             {activeTab === '' && (
               <div className="home-page">
                 <h1>Welcome to Admin Dashboard</h1>
-                <p>Manage your platform efficiently with real-time insights.</p>
-
                 {/* Statistics Cards */}
                 <div className="stats-grid">
                   {/* Total Users Card */}
@@ -430,8 +450,9 @@ class AdminDashboard extends Component {
                       <th>Description</th>
                       <th>Price</th>
                       <th>Type</th>
+                      <th>Rating</th>
                       <th>Availability</th>
-                      <th>listing Posted</th>
+                      <th>Listing Posted</th>
                       {activeTab === 'Approve/Reject Listings' && <th>Action</th>}
                     </tr>
                   </thead>
@@ -442,6 +463,7 @@ class AdminDashboard extends Component {
                         <td>{listing.description}</td>
                         <td>${listing.price.toLocaleString()}</td>
                         <td>{listing.property_type}</td>
+                        <td>{listing.rating.average_rating}</td>
                         <td>{listing.availability}</td>
                         <td>{listing.postedMonth} {listing.postedYear}</td>
                         {activeTab === 'Approve/Reject Listings' && (
@@ -461,29 +483,64 @@ class AdminDashboard extends Component {
             {activeTab === 'View Platform Analytics' && (
               <div className="analysis-chart">
                 <p className="header-title">Visualization of Users and Listings</p>
-                <PieChart width={500} height={350}>
-                  <Pie data={[
-                    { name: 'Active Users', value: activeUsers },
-                    { name: 'Suspended Users', value: suspendedUsers },
-                  ]} cx={200} cy={150} outerRadius={100} fill="#8884d8" dataKey="value" label>
-                    <Cell fill="#0088FE" />
-                    <Cell fill="#FFBB28" />
-                  </Pie>
-                  <Tooltip />
-                  <Legend layout="vertical" align="right" verticalAlign="middle" />
-                </PieChart>
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart
-                    data={this.processListingsByMonth(listings)}
-                    margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                  >
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" label={{ value: 'Month', position: 'insideBottom', offset: -5 }} />
-                    <YAxis label={{ value: 'Listings', angle: -90, position: 'insideLeft' }} />
+
+                {/* Pie Chart for Active vs Suspended Users */}
+                <div className="chart-container">
+                  <h3>User Status Distribution</h3>
+                  <PieChart width={500} height={350}>
+                    <Pie
+                      data={[
+                        { name: 'Active Users', value: activeUsers },
+                        { name: 'Suspended Users', value: suspendedUsers },
+                      ]}
+                      cx={200}
+                      cy={150}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="value"
+                      label
+                    >
+                      <Cell fill="#0088FE" />
+                      <Cell fill="#FFBB28" />
+                    </Pie>
                     <Tooltip />
-                    <Bar dataKey="listings" fill="#82ca9d" />
-                  </BarChart>
-                </ResponsiveContainer>
+                    <Legend layout="vertical" align="right" verticalAlign="middle" />
+                  </PieChart>
+                </div>
+
+                {/* Bar Chart for Listings by Rating */}
+                <div className="chart-container">
+                  <h3>Listings by Rating</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={this.processListingsByRating(listings)}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="rating" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="listings" fill="#8884d8" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Bar Chart for Listings by Month */}
+                <div className="chart-container">
+                  <h3>Listings Created Per Month</h3>
+                  <ResponsiveContainer width="100%" height={300}>
+                    <BarChart
+                      data={this.processListingsByMonth(listings)}
+                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="month" />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="listings" fill="#82ca9d" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
               </div>
             )}
 
